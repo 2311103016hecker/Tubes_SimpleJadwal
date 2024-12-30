@@ -8,6 +8,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 
 /**
@@ -15,10 +18,10 @@ import java.util.ArrayList;
  * @author hecke
  */
 public class ScheduleForm extends javax.swing.JFrame {
-    
+ 
     private ArrayList<Schedule> scheduleList = new ArrayList<>();
-    
- // Komponen GUI
+
+    // Komponen GUI
     private JTextField activityField;
     private JTextField dayField;
     private JTextField dateField;
@@ -88,46 +91,62 @@ public class ScheduleForm extends javax.swing.JFrame {
         saveButton = new JButton("Simpan");
         saveButton.setBounds(150, 300, 100, 30);
         add(saveButton);
-        
-        
-        
+
         // Event Listener untuk Tombol Simpan
         saveButton.addActionListener(new ActionListener() {
-             @Override
-    public void actionPerformed(ActionEvent e) {
-        // Ambil input dari form
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                saveDataToDatabase();
+            }
+        });
+
+        // Tombol Lihat Jadwal
+        JButton viewButton = new JButton("Lihat Jadwal");
+        viewButton.setBounds(150, 340, 100, 30);
+        add(viewButton);
+
+        // Event Listener untuk Tombol "Lihat Jadwal"
+        viewButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e){
+                new ScheduleTable().setVisible(true);
+              }
+        });
+    }
+
+    // Fungsi untuk menyimpan data ke database
+    private void saveDataToDatabase() {
         String activityName = activityField.getText();
         String day = dayField.getText();
         String date = dateField.getText();
         String additionalInfo = additionalInfoField.getText();
 
-        // Simpan data ke dalam list
-        Schedule schedule = new Schedule(activityName, day, date, additionalInfo);
-        scheduleList.add(schedule);
+        String url = "jdbc:mysql://localhost:3306/schedule_db"; // Ganti dengan nama database Anda
+        String user = "root"; // Username database Anda
+        String password = ""; // Password database Anda
 
-        // Tampilkan pesan sukses
-        JOptionPane.showMessageDialog(null, "Data Jadwal Berhasil Disimpan!");
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "INSERT INTO schedule_table (activity_name, day, date, additional_info) VALUES (?, ?, ?, ?)";
+            PreparedStatement statement = conn.prepareStatement(sql);
+            statement.setString(1, activityName);
+            statement.setString(2, day);
+            statement.setString(3, date);
+            statement.setString(4, additionalInfo);
 
-        // Bersihkan field input
-        activityField.setText("");
-        dayField.setText("");
-        dateField.setText("");
-        additionalInfoField.setText("");
-    }
-});
-        JButton viewButton = new JButton("Lihat Jadwal");
-viewButton.setBounds(150, 340, 100, 30);
-add(viewButton);
+            int rowsInserted = statement.executeUpdate();
+            if (rowsInserted > 0) {
+                JOptionPane.showMessageDialog(null, "Data berhasil disimpan ke database!");
+            }
 
-// Event Listener untuk Tombol "Lihat Jadwal"
-viewButton.addActionListener(new ActionListener() {
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        // Buka form ScheduleTable dengan data yang sudah diinputkan
-        new ScheduleTable(scheduleList).setVisible(true);
-    }
-});
-        
+            // Bersihkan input field
+            activityField.setText("");
+            dayField.setText("");
+            dateField.setText("");
+            additionalInfoField.setText("");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage());
+            ex.printStackTrace();
+        }
     }
 
     /**
@@ -159,7 +178,6 @@ viewButton.addActionListener(new ActionListener() {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-       // Menjalankan ScheduleForm
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {

@@ -7,7 +7,11 @@ package SimpleJadwal;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.util.ArrayList;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+
 /**
  *
  * @author hecke
@@ -17,7 +21,7 @@ public class ScheduleTable extends javax.swing.JFrame {
     private JTable table;
     private DefaultTableModel tableModel;
 
-    public ScheduleTable(ArrayList<Schedule> scheduleList) {
+    public ScheduleTable() {
         // Judul JFrame
         setTitle("Hasil Jadwal Anda");
         setSize(600, 400);
@@ -39,17 +43,36 @@ public class ScheduleTable extends javax.swing.JFrame {
         JScrollPane scrollPane = new JScrollPane(table);
         add(scrollPane, BorderLayout.CENTER);
 
-        // Mengisi data ke tabel
-        for (Schedule schedule : scheduleList) {
-            Object[] rowData = {
-                schedule.getActivityName(),
-                schedule.getDay(),
-                schedule.getDate(),
-                schedule.getAdditionalInfo()
-            };
-            tableModel.addRow(rowData);
+        // Mengisi data ke tabel dari database
+        loadDataFromDatabase();
+    }
+
+    private void loadDataFromDatabase() {
+        String url = "jdbc:mysql://localhost:3306/schedule_db"; // Ganti dengan nama database Anda
+        String user = "root"; // Username database Anda
+        String password = ""; // Password database Anda
+
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "SELECT activity_name, day, date, additional_info FROM schedule_table";
+            Statement statement = conn.createStatement();
+            ResultSet resultSet = statement.executeQuery(sql);
+
+            while (resultSet.next()) {
+                String activityName = resultSet.getString("activity_name");
+                String day = resultSet.getString("day");
+                String date = resultSet.getString("date");
+                String additionalInfo = resultSet.getString("additional_info");
+
+                // Tambahkan data ke tabel
+                Object[] rowData = {activityName, day, date, additionalInfo};
+                tableModel.addRow(rowData);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error saat memuat data: " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
+
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -80,13 +103,12 @@ public class ScheduleTable extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-// Test dummy data (hapus sebelum implementasi)
-        ArrayList<Schedule> dummyData = new ArrayList<>();
-        dummyData.add(new Schedule("Belajar Java", "Senin", "01/01/2024", "Minggu Pertama"));
-        dummyData.add(new Schedule("Meeting", "Selasa", "02/01/2024", "Penting"));
-
-        new ScheduleTable(dummyData).setVisible(true);
-    
+SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                new ScheduleTable().setVisible(true);
+            }
+        });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
