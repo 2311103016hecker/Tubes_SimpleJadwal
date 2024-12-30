@@ -7,8 +7,11 @@ package SimpleJadwal;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
@@ -20,6 +23,7 @@ public class ScheduleTable extends javax.swing.JFrame {
 
     private JTable table;
     private DefaultTableModel tableModel;
+    private JButton deleteButton;
 
     public ScheduleTable() {
         // Judul JFrame
@@ -42,6 +46,16 @@ public class ScheduleTable extends javax.swing.JFrame {
         table = new JTable(tableModel);
         JScrollPane scrollPane = new JScrollPane(table);
         add(scrollPane, BorderLayout.CENTER);
+
+        // Tombol Hapus
+        deleteButton = new JButton("Hapus Data");
+        deleteButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                deleteSelectedRow();
+            }
+        });
+        add(deleteButton, BorderLayout.SOUTH);
 
         // Mengisi data ke tabel dari database
         loadDataFromDatabase();
@@ -72,6 +86,37 @@ public class ScheduleTable extends javax.swing.JFrame {
             ex.printStackTrace();
         }
     }
+
+    private void deleteSelectedRow() {
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Pilih baris yang ingin dihapus terlebih dahulu.");
+            return;
+        }
+
+        String activityName = (String) tableModel.getValueAt(selectedRow, 0);
+
+        String url = "jdbc:mysql://localhost:3306/schedule_db"; // Ganti dengan nama database Anda
+        String user = "root"; // Username database Anda
+        String password = ""; // Password database Anda
+
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "DELETE FROM schedule_table WHERE activity_name = ?";
+            PreparedStatement preparedStatement = conn.prepareStatement(sql);
+            preparedStatement.setString(1, activityName);
+
+            int confirm = JOptionPane.showConfirmDialog(this, "Apakah Anda yakin ingin menghapus data ini?", "Konfirmasi Hapus", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                preparedStatement.executeUpdate();
+                tableModel.removeRow(selectedRow);
+                JOptionPane.showMessageDialog(this, "Data berhasil dihapus.");
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error saat menghapus data: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+
 
 
     /**
@@ -110,6 +155,10 @@ SwingUtilities.invokeLater(new Runnable() {
             }
         });
     }
+
+    // Variables declaration - do not modify                     
+    // End of variables declaration                   
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     // End of variables declaration//GEN-END:variables
